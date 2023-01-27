@@ -5,17 +5,22 @@ const mongoose = require('mongoose');
 // Load models
 const Message = require('./models/message');
 
+// Pass runtime option
+const Handlebars = require('handlebars');
+const { allowInsecurePrototypeAccess } = require('@handlebars/allow-prototype-access');
+
+
 const app = express();
 
 // Load keys file
-const Keys = require('./config/keys'); 
+const Keys = require('./config/keys');
 
 // use body parser middleware
-app.use(bodyParser.urlencoded({extended: false}));
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 // connect to mLab MongoDB
-mongoose.connect(Keys.MongoDB).then(() => {
+mongoose.connect(Keys.MongoDB, { useNewUrlParser: true }).then(() => {
     console.log('Server is connected to MongoDB')
 }).catch((err) => {
     console.log(err);
@@ -23,9 +28,16 @@ mongoose.connect(Keys.MongoDB).then(() => {
 
 // environment var for port
 const port = process.env.PORT || 3000;
+
 // setup view engine
-app.engine('handlebars', exphbs.engine({defaultLayout:'main'}));
+app.engine('handlebars', exphbs.engine({
+    defaultLayout: 'main',
+    handlebars: allowInsecurePrototypeAccess(Handlebars)
+}));
 app.set('view engine', 'handlebars');
+
+
+
 
 app.get('/', (req, res) => {
     res.render('home', {
@@ -59,8 +71,17 @@ app.post('/contactUs', (req, res) => {
         if (err) {
             throw err;
         } else {
-            res.render('newmessage', {
-                title: 'Sent'
+            Message.find({}).then((messages) => {
+                if (messages) {
+                    res.render('newmessage', {
+                        title: 'Sent',
+                        messages: messages
+                    });
+                } else {
+                    res.render('noMessage', {
+                        title: 'Not Found'
+                    });
+                }
             });
         }
     });
