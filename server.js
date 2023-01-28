@@ -2,8 +2,13 @@ const express = require('express');
 const exphbs = require('express-handlebars');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+const passport = require('passport');
+const cookieParser = require('cookie-parser');
+const session = require('express-session');
+
 // Load models
 const Message = require('./models/message');
+const User = require('./models/user');
 
 // Pass runtime option
 const Handlebars = require('handlebars');
@@ -15,11 +20,24 @@ const app = express();
 // Load keys file
 const Keys = require('./config/keys');
 
-// use body parser middleware
+// Use body parser middleware
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-// connect to mLab MongoDB
+// Configuration for authentification
+app.use(cookieParser());
+app.use(session({
+    secret: 'mysecret',
+    resave: true,
+    saveUninitialized: true
+}));
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Load facebook strategy
+require('./passport/facebook');
+
+// Connect to mLab MongoDB
 mongoose.connect(Keys.MongoDB, { useNewUrlParser: true }).then(() => {
     console.log('Server is connected to MongoDB')
 }).catch((err) => {
@@ -58,6 +76,14 @@ app.get('/contact', (req, res) => {
         title: 'Contact'
     });
 });
+
+app.get('/auth/facebook', passport.authenticate('facebook', {
+    scope: ['email']
+}));
+app.get('/auth/facebook/callback', passport.authenticate('facebook', {
+    successRedirect: '/profile',
+    failureRedirect: '/'
+}));
 
 app.post('/contactUs', (req, res) => {
     console.log(req.body);
