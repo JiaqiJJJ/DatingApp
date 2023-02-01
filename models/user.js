@@ -33,7 +33,10 @@ const userSchema = new Schema({
     wallet: {
         type: Number,
         default: 0
-    } 
+    },
+    password: {
+        type: String
+    }
 });
 
 module.exports = mongoose.model('User', userSchema);
