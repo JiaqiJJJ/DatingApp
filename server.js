@@ -12,6 +12,7 @@ const bcrypt = require('bcryptjs');
 const Message = require('./models/message');
 const User = require('./models/user');
 
+
 // Pass runtime option
 const Handlebars = require('handlebars');
 const { allowInsecurePrototypeAccess } = require('@handlebars/allow-prototype-access');
@@ -58,6 +59,8 @@ app.use((req, res, next) => {
 
 // Load facebook strategy
 require('./passport/facebook');
+// Google
+require('./passport/local');
 
 // Connect to mLab MongoDB
 mongoose.connect(Keys.MongoDB, { useNewUrlParser: true }).then(() => {
@@ -182,6 +185,18 @@ app.post('/signup', (req, res) => {
             }
         });
     }
+});
+
+app.post('/login', passport.authenticate('local', {
+    successRedirect: '/profile',
+    failureRedirect: '/loginErrors'
+}));
+app.get('/loginErrors', (req, res) => {
+    let errors = [];
+    errors.push({text: 'User Not found or Password Incorrect'});
+    res.render('home', {
+        errors: errors
+    });
 });
 
 app.get('/logout', (req, res) => {
